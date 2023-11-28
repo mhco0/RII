@@ -3,7 +3,6 @@ import json
 import re
 import unidecode
 from utils import Utils
-from deep_translator import PonsTranslator
 import nltk
 
 nltk.download("punkt")
@@ -11,6 +10,8 @@ from nltk.tokenize import word_tokenize
 
 nltk.download("stopwords")
 from nltk.corpus import stopwords
+
+from nltk.stem.porter import *
 
 
 def filter_data(json_data):
@@ -70,16 +71,23 @@ def tokenize_field(json_data, field):
 
 
 def pre_process(json_data):
+    stemmer = PorterStemmer()
+
     for entry in json_data:
         for review in entry["reviews"]:
             review["body"] = tokenize_field(review, "body")
+            for word in review["body"]:
+                word = stemmer.stem(word)
             review["title"] = tokenize_field(review, "title")
+            for word in review["title"]:
+                word = stemmer.stem(word)
 
     return json_data
 
 
 def load_db():
     return Utils.readJsonFile("bookccw\\amazon.json")
+
 
 def save_db(path, json):
     Utils.writeJsonFile(path, json)
@@ -94,4 +102,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-              
