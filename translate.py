@@ -1,73 +1,49 @@
 import json
-import re
+from preprocessing import bow, tokenize_field
 from utils import Utils
-import numpy as np
-import unidecode
-import nltk
-from nltk.tokenize import word_tokenize
 
-nltk.download("stopwords")
-from nltk.corpus import stopwords
+import argostranslate.package
+import argostranslate.translate
+
+from_code = "pt"
+to_code = "en"
+
+# Download and install Argos Translate package
+argostranslate.package.update_package_index()
+available_packages = argostranslate.package.get_available_packages()
+package_to_install = next(
+    filter(
+        lambda x: x.from_code == from_code and x.to_code == to_code, available_packages
+    )
+)
+argostranslate.package.install_from_path(package_to_install.download())
 
 
-def bow(json_data):
-    word_dict = {}
+def get_english_reviews(json_data):
+    i = 0
 
     for entry in json_data:
         for review in entry["reviews"]:
-            for word in review["body"]:
-                if word in word_dict:
-                    word_dict[word] += 1
-                else:
-                    word_dict[word] = 1
+            bag = bow(review["body"])
 
-            for word in review["title"]:
-                if word in word_dict:
-                    word_dict[word] += 1
-                else:
-                    word_dict[word] = 1
+            list_of_keys = list(bag.keys())
 
-    return word_dict
+            for word in bag:
+                word = argostranslate.translate.translate(word, from_code, to_code)
+                list_of_keys.append(word)
 
+            review["body"] = " ".join(list_of_keys)
+            review["body"] = tokenize_field(review, "body", "english")
 
-def simplifly_dict(translation_dictonary):
-    t_dict = {}
+        i += 1
+        print(f"run : {i / len(json_data)}%")
 
-    for word in translation_dictonary["words"]:
-        unidecode_text = unidecode.unidecode(word["targetWord"])
-
-        # Substitute point and go to lower case
-        removed_dots = re.sub("[^A-Za-z]", " ", unidecode_text)
-        removed_dots = removed_dots.lower()
-
-        tokenized_text = word_tokenize(removed_dots, language="portuguese")
-
-        word["targetWord"]= tokenized_text[0]
-
-        t_dict[word["targetWord"]] = word["englishWord"]
-
-    return t_dict
-
-
-def translate(bow, translate_dict):
-    translation = {}
-
-    for word in bow:
-        if word in translate_dict:
-            translation[word] = translate_dict[word]
-        else:
-            translation[word] = word
-
-    return translation
+    return json_data
 
 
 def main():
-    json_preprocessed = Utils.readJsonFile("./preprocessed.json")
-    translation_dictonary = Utils.readJsonFile("./pt.json")
-
-    bag = bow(json_preprocessed)
-
-    print(json.dumps(translate(bag, simplifly_dict(translation_dictonary)), indent=4))
+    json_data = Utils.readJsonFile("preprocessed.json")
+    Utils.writeJsonFile("translated.json", get_english_reviews(json_data))
 
 
 if __name__ == "__main__":

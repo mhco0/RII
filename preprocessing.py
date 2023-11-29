@@ -11,8 +11,6 @@ from nltk.tokenize import word_tokenize
 nltk.download("stopwords")
 from nltk.corpus import stopwords
 
-from nltk.stem.porter import *
-
 
 def filter_data(json_data):
     new_data = []
@@ -29,8 +27,6 @@ def filter_data(json_data):
             new_json = {
                 "name": info["name"],
                 "description": info["description"],
-                "url": info["url"],
-                "sku": info["sku"],
                 "aggregate": info["aggregateRating"]["ratingValue"],
                 "reviews": [],
             }
@@ -42,10 +38,12 @@ def filter_data(json_data):
                 new_json["reviews"].append(
                     {
                         "rating": review["reviewRating"]["ratingValue"],
-                        "date": review["datePublished"],
                         "author": review["author"]["id"],
+                        "original_body": review["reviewBody"],
                         "body": review["reviewBody"],
                         "title": review["name"],
+                        "sent": 0.0,
+                        "category": "",
                     }
                 )
 
@@ -54,33 +52,38 @@ def filter_data(json_data):
     return new_data
 
 
-def tokenize_field(json_data, field):
+def bow(word_list):
+    word_dict = {}
+
+    for word in word_list:
+        if word in word_dict:
+            word_dict[word] += 1
+        else:
+            word_dict[word] = 1
+
+    return word_dict
+
+
+def tokenize_field(json_data, field, language):
     unidecode_text = unidecode.unidecode(json_data[field])
 
     # Substitute point and go to lower case
     removed_dots = re.sub("[^A-Za-z]", " ", unidecode_text)
     removed_dots = removed_dots.lower()
 
-    tokenized_text = word_tokenize(removed_dots, language="portuguese")
+    tokenized_text = word_tokenize(removed_dots, language=language)
 
     for word in tokenized_text:
-        if word in stopwords.words("portuguese"):
+        if word in stopwords.words(language):
             tokenized_text.remove(word)
 
     return tokenized_text
 
 
 def pre_process(json_data):
-    stemmer = PorterStemmer()
-
     for entry in json_data:
         for review in entry["reviews"]:
-            review["body"] = tokenize_field(review, "body")
-            for word in review["body"]:
-                word = stemmer.stem(word)
-            review["title"] = tokenize_field(review, "title")
-            for word in review["title"]:
-                word = stemmer.stem(word)
+            review["body"] = tokenize_field(review, "body", "portuguese")
 
     return json_data
 
