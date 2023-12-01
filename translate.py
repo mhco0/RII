@@ -1,6 +1,8 @@
 import json
-from preprocessing import bow, tokenize_field
+import unidecode
+from filtered import bow, tokenize_field
 from utils import Utils
+from spellchecker import SpellChecker
 
 import argostranslate.package
 import argostranslate.translate
@@ -19,20 +21,46 @@ package_to_install = next(
 argostranslate.package.install_from_path(package_to_install.download())
 
 
-def get_english_reviews(json_data):
+def try_correct_spelling(json_data):
+    spell = SpellChecker(language="pt")
+    print("Trying to correct....")
     i = 0
+    for entry in json_data:
+        for review in entry["reviews"]:
+            words = spell.split_words(unidecode.unidecode(review["body"]))
+
+            list_of_correct_words = []
+
+            for word in words:
+                correct_word = spell.correction(word)
+                if correct_word:
+                    list_of_correct_words.append(correct_word)
+                else:
+                    list_of_correct_words.append(word)
+
+            review["probably_correct_body"] = list_of_correct_words
+
+        i += 1
+        print(f"run : {i / len(json_data)}%")
+
+    return json_data
+
+
+def translate_text(json_data):
+    i = 0
+    print("Trying to translate...")
 
     for entry in json_data:
         for review in entry["reviews"]:
-            bag = bow(review["body"])
+            bag = bow(review["probably_correct_body"])
 
-            list_of_keys = list(bag.keys())
+            list_of_translated_words = []
 
-            for word in bag:
+            for word in bag.keys():
                 word = argostranslate.translate.translate(word, from_code, to_code)
-                list_of_keys.append(word)
+                list_of_translated_words.append(word)
 
-            review["body"] = " ".join(list_of_keys)
+            review["body"] = " ".join(list_of_translated_words)
             review["body"] = tokenize_field(review, "body", "english")
 
         i += 1
@@ -42,8 +70,11 @@ def get_english_reviews(json_data):
 
 
 def main():
-    json_data = Utils.readJsonFile("preprocessed.json")
-    Utils.writeJsonFile("translated.json", get_english_reviews(json_data))
+    json_data = Utils.readJsonFile("filtered.json")
+    json_data = try_correct_spelling(json_data)
+    Utils.writeJsonFile("correct_spelling.json", json_data)
+    json_data = translate_text(json_data)
+    Utils.writeJsonFile("translated.json", json_data)
 
 
 if __name__ == "__main__":

@@ -48,17 +48,29 @@ def apply_score(json_data):
             }
 
             if review["sent"]["pos"] <= review["sent"]["neg"]:
+                review["sent_category"] = "negative"
+            else:
+                review["sent_category"] = "positive"
+
+            star_score = review["rating"]
+            review["match"] = 0
+
+            if star_score < 3:
                 review["category"] = "negative"
             else:
                 review["category"] = "positive"
 
-            star_score = review["rating"]
-            if star_score < 3 and review["category"] == "negative":
+            if (
+                review["category"] == "negative"
+                and review["sent_category"] == "negative"
+            ):
                 review["match"] = 1
-            elif star_score >= 3 and review["category"] == "positive":
+
+            if (
+                review["category"] == "positive"
+                and review["sent_category"] == "positive"
+            ):
                 review["match"] = 1
-            else:
-                review["match"] = 0
 
     return json_data
 

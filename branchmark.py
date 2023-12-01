@@ -1,40 +1,71 @@
 import json
 import re
 from utils import Utils
+import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def main():
     json_data = Utils.readJsonFile("scored.json")
-    positive_matches = 0
-    negative_matches = 0
+
     true_negative = 0
     true_positive = 0
     false_positive = 0
     false_negative = 0
-    total = 0
+    total_positive = 0
+    total_negative = 0
 
     for entry in json_data:
         for review in entry["reviews"]:
             if review["match"]:
-                positive_matches += 1
-                if review["category"] == "positive":
+                if review["sent_category"] == "positive":
                     true_positive += 1
                 else:
                     true_negative += 1
-            else:
-                negative_matches += 1
 
-            if not review["match"] and review["category"] == "positive":
+            if not review["match"] and review["sent_category"] == "positive":
                 false_positive += 1
 
-            if not review["match"] and review["category"] == "negative":
+            if not review["match"] and review["sent_category"] == "negative":
                 false_negative += 1
 
-            total += 1
+            if review["category"] == "positive":
+                total_positive += 1
+            else:
+                total_negative += 1
 
-    print(f"\tMatch\tNot Match\tTotal\tFP\tFN\tPrecision\tRecall\tF1\n")
+    array = [
+        [
+            true_positive,
+            false_positive,
+            false_negative / (true_positive + false_negative),
+            total_positive,
+            true_positive + false_positive,
+        ],
+        [
+            false_negative,
+            true_negative,
+            false_positive / (false_positive + true_negative),
+            total_negative,
+            false_negative + true_negative,
+        ],
+    ]
+
+    data_frame = pd.DataFrame(
+        array,
+        ["positive", "negative"],
+        [
+            "Senti Positive",
+            "Senti Negative",
+            "Error by class",
+            "Total Real",
+            "Total Senti",
+        ],
+    )
+
+    print(data_frame)
     print(
-        f"\t{positive_matches}\t{negative_matches}\t\t{total}\t{false_positive}\t{false_negative}\t{true_positive/ (true_positive + false_positive):.2f}\t\t{true_negative/(true_negative + false_positive):.2f}\t{ (2 * true_positive)/ (2* true_positive + false_positive + false_negative):.2f}\n"
+        f"Error total = {(false_negative + false_positive) / (true_positive + true_negative + false_negative + false_positive):2f}\nAccuracy = {(true_positive + true_negative)/ (true_positive + true_negative + false_negative + false_positive):2f}"
     )
 
 
