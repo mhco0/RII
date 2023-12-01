@@ -47,7 +47,7 @@ def apply_score(json_data):
                 "obj": total_score["obj_score"],
             }
 
-            if review["sent"]["pos"] <= review["sent"]["neg"]:
+            if review["sent"]["pos"] < review["sent"]["neg"]:
                 review["sent_category"] = "negative"
             else:
                 review["sent_category"] = "positive"
@@ -60,16 +60,7 @@ def apply_score(json_data):
             else:
                 review["category"] = "positive"
 
-            if (
-                review["category"] == "negative"
-                and review["sent_category"] == "negative"
-            ):
-                review["match"] = 1
-
-            if (
-                review["category"] == "positive"
-                and review["sent_category"] == "positive"
-            ):
+            if review["category"] == review["sent_category"]:
                 review["match"] = 1
 
     return json_data

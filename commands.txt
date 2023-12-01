@@ -1,0 +1,9 @@
+python -m venv venv
+cd venv/Scripts/
+activate
+cd ../../
+pip install -r requirements.txt
+python filtered.py
+python translate.py
+python as.py
+python branchmark.py

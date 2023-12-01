@@ -58,9 +58,13 @@ def translate_text(json_data):
 
             for word in bag.keys():
                 word = argostranslate.translate.translate(word, from_code, to_code)
-                list_of_translated_words.append(word)
+                word_list = list(set(word.split()))
+                list_of_translated_words.append(" ".join(word_list))
 
-            review["body"] = " ".join(list_of_translated_words)
+            if list_of_translated_words:
+                review["body"] = " ".join(list_of_translated_words)
+            else:
+                review["body"] = review["probably_correct_body"]
             review["body"] = tokenize_field(review, "body", "english")
 
         i += 1
@@ -70,11 +74,12 @@ def translate_text(json_data):
 
 
 def main():
-    json_data = Utils.readJsonFile("filtered.json")
-    json_data = try_correct_spelling(json_data)
-    Utils.writeJsonFile("correct_spelling.json", json_data)
+    # json_data = Utils.readJsonFile("filtered.json")
+    # json_data = try_correct_spelling(json_data)
+    # Utils.writeJsonFile("correct_spelling.json", json_data)
+    json_data = Utils.readJsonFile("correct_spelling.json")
     json_data = translate_text(json_data)
-    Utils.writeJsonFile("translated.json", json_data)
+    Utils.writeJsonFile("translated2.json", json_data)
 
 
 if __name__ == "__main__":
