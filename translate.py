@@ -74,10 +74,9 @@ def translate_text(json_data):
 
 
 def main():
-    # json_data = Utils.readJsonFile("filtered.json")
-    # json_data = try_correct_spelling(json_data)
-    # Utils.writeJsonFile("correct_spelling.json", json_data)
-    json_data = Utils.readJsonFile("correct_spelling.json")
+    json_data = Utils.readJsonFile("filtered.json")
+    json_data = try_correct_spelling(json_data)
+    Utils.writeJsonFile("correct_spelling.json", json_data)
     json_data = translate_text(json_data)
     Utils.writeJsonFile("translated2.json", json_data)
 
